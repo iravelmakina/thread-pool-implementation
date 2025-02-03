@@ -3,4 +3,9 @@ project(thread_pool_implementation)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable(thread_pools_implementation main.cpp)
+include_directories(include)
+
+add_executable(thread_pool_implementation
+        src/main.cpp
+        src/ThreadPool.cpp
+        src/TaskQueue.cpp)
