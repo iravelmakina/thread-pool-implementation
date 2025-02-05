@@ -8,4 +8,4 @@ include_directories(include)
 add_executable(thread_pool_implementation
         src/main.cpp
         src/ThreadPool.cpp
-        src/TaskQueue.cpp)
+)
