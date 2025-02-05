@@ -1,22 +1,32 @@
 #pragma once
+#include <queue>
 #include <thread>
 
-#include "TaskQueue.h"
 
 class ThreadPool {
 public:
-    explicit ThreadPool(size_t numThreads, TaskQueue &taskQueue);
+    explicit ThreadPool(size_t numThreads);
 
+    void submit(const std::function<void()>& task);
+    void pause();
+    void resume();
     void stopNow(); // Immediate shutdown (cancels all tasks)
     void shutdown(); // Graceful shutdown (waits for tasks to complete)
 
     ~ThreadPool();
 
 private:
-    std::atomic<bool> stopFlag{false};
-    std::atomic<bool> immediateStopFlag{false};
-    TaskQueue &taskQueue;
-    std::vector<std::thread> workers;
-    void worker() const;
+    std::queue<std::function<void()>> _taskQueue;
+    std::vector<std::thread> _workers;
+    void worker();
+
+    bool runAllowed() const;
+
+    std::condition_variable _cv;
+    std::mutex _mutex;
+
+    std::atomic<bool> _stopFlag{false};
+    std::atomic<bool> _immediateStopFlag{false};
+    std::atomic<bool> _pauseFlag{false};
 };
 
