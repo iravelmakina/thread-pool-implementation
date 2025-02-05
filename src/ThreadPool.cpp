@@ -13,8 +13,8 @@ ThreadPool::ThreadPool(const size_t numThreads) {
 
 
 void ThreadPool::submit(const std::function<void()>& task) {
-    if (_stopFlag || _immediateStopFlag) {
-        std::cout << "Task discarded (thread pool is shutting down)." << std::endl;
+    if (_stopFlag || _immediateStopFlag || _pauseFlag) {
+        std::cout << "Task discarded (thread pool is shutting down or paused)." << std::endl;
         return;
     }
     if (_executionPhaseFlag) {
@@ -89,7 +89,7 @@ bool ThreadPool::runAllowed() const {
 
 
 void ThreadPool::worker() {
-    while(!_stopFlag && !_immediateStopFlag) {
+    while(!_immediateStopFlag) {
         std::unique_lock lock(_mutex);
         _cv.wait(lock, [this] { return runAllowed() || _stopFlag || _immediateStopFlag; });
         if (_immediateStopFlag) {
@@ -100,6 +100,7 @@ void ThreadPool::worker() {
             std::function<void()> task = _taskQueue.front();
             _taskQueue.pop();
             lock.unlock();
+            _cv.notify_one();
             task();
         }
     }
@@ -111,23 +112,22 @@ void ThreadPool::startExecutionCycle() {
         std::cout << "Buffering tasks for 45 seconds..." << std::endl;
         std::this_thread::sleep_for(std::chrono::seconds(45));
 
-        std::unique_lock lock(_mutex);
-        _cv.wait(lock, [this] { return !_pauseFlag || _stopFlag || _immediateStopFlag ; });
-        lock.unlock();
-        if (_stopFlag || _immediateStopFlag) break;
+        if (_immediateStopFlag || _pauseFlag) {
+            continue;
+        }
 
         std::cout << "Executing buffered tasks..." << std::endl;
         _executionPhaseFlag = true;
-        _cv.notify_all();
-
+        _cv.notify_one();
 
         while (true) {
             std::unique_lock lock(_mutex);
-            if (_taskQueue.empty()) break;
+            if (_taskQueue.empty() || _immediateStopFlag) {
+                break;
+            }
             lock.unlock();
             std::this_thread::sleep_for(std::chrono::seconds(1));
         }
-
         _executionPhaseFlag = false;
     }
 }

@@ -10,8 +10,8 @@ public:
     void submit(const std::function<void()>& task);
     void pause();
     void resume();
-    void stopNow(); // Immediate shutdown (cancels all tasks)
-    void shutdown(); // Graceful shutdown (waits for tasks to complete)
+    void stopNow();
+    void shutdown();
 
     ~ThreadPool();
 
@@ -19,8 +19,8 @@ private:
     std::queue<std::function<void()>> _taskQueue;
     std::vector<std::thread> _workers;
     std::thread _executor;
-    void worker();
 
+    void worker();
     void startExecutionCycle();
     bool runAllowed() const;
 
