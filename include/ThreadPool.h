@@ -32,5 +32,13 @@ private:
     std::atomic<bool> _pauseFlag{false};
     std::atomic<bool> _executionPhaseFlag{false};
 
+    // testing
+    std::atomic<size_t> totalThreadsCreated{0};
+    std::atomic<size_t> totalTasksExecuted{0};
+    std::atomic<size_t> totalWaitingTime{0};
+    std::atomic<size_t> totalExecutionTime{0};
+    std::atomic<size_t> totalQueueLength{0};
+    std::atomic<size_t> queueCheckCount{0};
+    void printStats() const;
 };
 

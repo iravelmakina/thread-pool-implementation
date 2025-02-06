@@ -52,6 +52,7 @@ void ThreadPool::shutdown() {
     }
 
     std::cout << "Thread pool shut down." << std::endl;
+    printStats();
 }
 
 
@@ -67,11 +68,13 @@ void ThreadPool::stopNow() {
     }
 
     std::cout << "Thread pool stopped immediately." << std::endl;
+    printStats();
 }
 
 
 
 void ThreadPool::worker() {
+    ++totalThreadsCreated;
     while(true) {
         if (_immediateStopFlag || _stopFlag) {
             break;
@@ -79,24 +82,37 @@ void ThreadPool::worker() {
         if (!_executionPhaseFlag && !_pauseFlag) {
             std::cout << "Buffering tasks for 45 seconds..." << std::endl;
             auto start = std::chrono::steady_clock::now();
-            while (std::chrono::steady_clock::now() - start < std::chrono::seconds(8)) {
+            while (std::chrono::steady_clock::now() - start < std::chrono::seconds(45)) {
                 if (_pauseFlag || _stopFlag || _immediateStopFlag) {
                     break;
                 }
             }
+            std::cout << "Buffering completed. Queue size after buffering: " << _taskQueue.size() << std::endl;
             _executionPhaseFlag = true;
             _cv.notify_all();
         }
 
+        if (!_taskQueue.empty()) {
+            totalQueueLength += _taskQueue.size();
+            ++queueCheckCount;
+        }
+
         std::unique_lock lock(_mutex);
+        auto waitStart = std::chrono::high_resolution_clock::now();
         _cv.wait(lock, [this] {  return !_taskQueue.empty() ||_immediateStopFlag || _stopFlag || _pauseFlag; });
+        auto waitEnd = std::chrono::high_resolution_clock::now();
+        totalWaitingTime += std::chrono::duration_cast<std::chrono::milliseconds>(waitEnd - waitStart).count();
 
         while (!_taskQueue.empty() && !_immediateStopFlag && !_pauseFlag) {
+            auto taskStart = std::chrono::high_resolution_clock::now();
             std::function<void()> task = _taskQueue.front();
             _taskQueue.pop();
             _cv.notify_all();
             lock.unlock();
             task();
+            auto taskEnd = std::chrono::high_resolution_clock::now();
+            ++totalTasksExecuted;
+            totalExecutionTime += std::chrono::duration_cast<std::chrono::milliseconds>(taskEnd - taskStart).count(); // Update total execution time
             lock.lock();
         }
         if (_taskQueue.empty()) {
@@ -110,4 +126,18 @@ ThreadPool::~ThreadPool() {
     if (!_stopFlag && !_immediateStopFlag) {
         shutdown();
     }
+}
+
+
+void ThreadPool::printStats() const {
+    std::cout << "\n--- Performance Metrics ---\n";
+    std::cout << "Threads Created: " << totalThreadsCreated << "\n";
+    std::cout << "Tasks Executed: " << totalTasksExecuted << "\n";
+    std::cout << "Average Waiting Time (ms): "
+              << (totalThreadsCreated ? totalWaitingTime / totalThreadsCreated : 0) << "\n";
+    std::cout << "Average Task Execution Time (ms): "
+              << (totalTasksExecuted ? totalExecutionTime / totalTasksExecuted : 0) << "\n";
+    std::cout << "Average Queue Length: "
+              << (queueCheckCount ? totalQueueLength / queueCheckCount : 0) << "\n";
+
 }
