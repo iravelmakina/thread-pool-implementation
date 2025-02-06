@@ -4,11 +4,10 @@
 
 
 ThreadPool::ThreadPool(const size_t numThreads) {
+    std::cout << "Thread pool is created!" << std::endl;
     for (size_t i = 0; i < numThreads; ++i) {
         _workers.emplace_back(&ThreadPool::worker, this);
     }
-    _executor = std::thread(&ThreadPool::startExecutionCycle, this);
-    std::cout << "Thread pool is created!" << std::endl;
 }
 
 
@@ -27,21 +26,18 @@ void ThreadPool::submit(const std::function<void()>& task) {
 
 
 void ThreadPool::pause() {
-    if (!_pauseFlag) {
-        _pauseFlag = true;
-        _cv.notify_all();
-        std::cout << "Thread pool paused." << std::endl;
-    }
+    _pauseFlag = true;
+    _cv.notify_all();
+    std::cout << "Thread pool paused." << std::endl;
+
 }
 
 
 void ThreadPool::resume() {
-    if (_pauseFlag) {
-        _pauseFlag = false;
-        _cv.notify_all();
-        std::cout << "Thread pool resumed." << std::endl;
-    }
-} // cool
+    _pauseFlag = false;
+    _cv.notify_all();
+    std::cout << "Thread pool resumed." << std::endl;
+}
 
 
 void ThreadPool::shutdown() {
@@ -55,10 +51,6 @@ void ThreadPool::shutdown() {
         }
     }
 
-    if (_executor.joinable()) {
-        _executor.join();
-    }
-    _workers.clear();
     std::cout << "Thread pool shut down." << std::endl;
 }
 
@@ -74,66 +66,48 @@ void ThreadPool::stopNow() {
         }
     }
 
-    if (_executor.joinable()) {
-        _executor.join();
-    }
-
-    _workers.clear();
     std::cout << "Thread pool stopped immediately." << std::endl;
 }
 
 
-bool ThreadPool::runAllowed() const {
-    return !_taskQueue.empty() && _executionPhaseFlag && !_pauseFlag;
-}
-
 
 void ThreadPool::worker() {
-    while(!_immediateStopFlag) {
-        std::unique_lock lock(_mutex);
-        _cv.wait(lock, [this] { return runAllowed() || _stopFlag || _immediateStopFlag; });
-        if (_immediateStopFlag) {
+    while(true) {
+        if (_immediateStopFlag || _stopFlag) {
             break;
         }
+        if (!_executionPhaseFlag && !_pauseFlag) {
+            std::cout << "Buffering tasks for 45 seconds..." << std::endl;
+            auto start = std::chrono::steady_clock::now();
+            while (std::chrono::steady_clock::now() - start < std::chrono::seconds(8)) {
+                if (_pauseFlag || _stopFlag || _immediateStopFlag) {
+                    break;
+                }
+            }
+            _executionPhaseFlag = true;
+            _cv.notify_all();
+        }
 
-        if (runAllowed()) {
+        std::unique_lock lock(_mutex);
+        _cv.wait(lock, [this] {  return !_taskQueue.empty() ||_immediateStopFlag || _stopFlag || _pauseFlag; });
+
+        while (!_taskQueue.empty() && !_immediateStopFlag && !_pauseFlag) {
             std::function<void()> task = _taskQueue.front();
             _taskQueue.pop();
+            _cv.notify_all();
             lock.unlock();
-            _cv.notify_one();
             task();
+            lock.lock();
         }
-    }
-}
-
-
-void ThreadPool::startExecutionCycle() {
-    while (!_stopFlag && !_immediateStopFlag && !_pauseFlag) {
-        std::cout << "Buffering tasks for 45 seconds..." << std::endl;
-        std::this_thread::sleep_for(std::chrono::seconds(45));
-
-        if (_immediateStopFlag || _pauseFlag) {
-            continue;
+        if (_taskQueue.empty()) {
+            _executionPhaseFlag = false;
         }
-
-        std::cout << "Executing buffered tasks..." << std::endl;
-        _executionPhaseFlag = true;
-        _cv.notify_one();
-
-        while (true) {
-            std::unique_lock lock(_mutex);
-            if (_taskQueue.empty() || _immediateStopFlag) {
-                break;
-            }
-            lock.unlock();
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-        }
-        _executionPhaseFlag = false;
     }
 }
 
 
 ThreadPool::~ThreadPool() {
-    shutdown();
-    std::cout << "Job is done!" << std::endl;
+    if (!_stopFlag && !_immediateStopFlag) {
+        shutdown();
+    }
 }
