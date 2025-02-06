@@ -12,6 +12,7 @@ ThreadPool::ThreadPool(const size_t numThreads) {
 
 
 void ThreadPool::submit(const std::function<void()>& task) {
+    std::lock_guard lock(_mutex);
     if (_stopFlag || _immediateStopFlag || _pauseFlag) {
         std::cout << "Task discarded (thread pool is shutting down or paused)." << std::endl;
         return;
@@ -20,7 +21,6 @@ void ThreadPool::submit(const std::function<void()>& task) {
         std::cout << "Task discarded (there are still tasks in the queue to perform)." << std::endl;
         return;
     }
-    std::lock_guard lock(_mutex);
     _taskQueue.push(task);
 }
 
@@ -72,7 +72,6 @@ void ThreadPool::stopNow() {
 }
 
 
-
 void ThreadPool::worker() {
     ++totalThreadsCreated;
     while(true) {
@@ -80,9 +79,9 @@ void ThreadPool::worker() {
             break;
         }
         if (!_executionPhaseFlag && !_pauseFlag) {
-            std::cout << "Buffering tasks for 45 seconds..." << std::endl;
+            printf("Buffering tasks for 45 seconds...");
             auto start = std::chrono::steady_clock::now();
-            while (std::chrono::steady_clock::now() - start < std::chrono::seconds(45)) {
+            while (std::chrono::high_resolution_clock::now() - start < std::chrono::seconds(45)) {
                 if (_pauseFlag || _stopFlag || _immediateStopFlag) {
                     break;
                 }

@@ -32,8 +32,8 @@ int main() {
     std::thread generator(taskGenerator, std::ref(pool), std::ref(running));
 
     // run the thread pool for 2 minutes with pause/resume cycles
-    for (size_t i = 0; i < 4; ++i) {
-        std::this_thread::sleep_for(std::chrono::seconds(60));
+    for (size_t i = 0; i < 2; ++i) {
+        std::this_thread::sleep_for(std::chrono::seconds(80));
         std::cout << "Pausing thread pool..." << std::endl;
         pool.pause();
 
@@ -42,7 +42,7 @@ int main() {
         pool.resume();
     }
 
-    std::this_thread::sleep_for(std::chrono::seconds(20));  // additional run time
+    std::this_thread::sleep_for(std::chrono::seconds(30));  // additional run time
     std::cout << "Initiating graceful shutdown..." << std::endl;
     pool.shutdown();
 
