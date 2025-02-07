@@ -55,7 +55,7 @@ The program creates a **thread pool with worker threads** that execute tasks in 
 It also includes **pause/resume cycles** and an **immediate or graceful shutdown process**.
 
 By default:
-- Tasks are pushed every **3 seconds**.
+- Tasks are sumbitted every **3 seconds**.
 - Buffering of tasks performs for **45 seconds**.
 - Tasks are executed with **random durations (6-12 seconds)**.
 - The **pool pauses every 60 seconds** and **resumes after 5 seconds**.
