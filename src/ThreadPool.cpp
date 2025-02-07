@@ -159,6 +159,6 @@ void ThreadPool::printStats() const {
     std::cout << "Average Task Execution Time (ms): "
               << (totalTasksExecuted ? totalExecutionTime / totalTasksExecuted : 0) << "\n";
     std::cout << "Average Queue Length: "
-              << (queueCheckCount ? totalQueueLength / queueCheckCount : 0) << "\n";
+              << (queueCheckCount ? totalQueueLength / queueCheckCount : 0) << "\n\n";
 
 }
