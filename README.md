@@ -51,7 +51,7 @@ By default, the project compiles with **C++11 or higher**. You can specify a new
 ```
 
 ## Usage
-The program creates a **thread pool with worker threads **that execute tasks in parallel and a **manager thread that handles buffering process**.  
+The program creates a **thread pool with worker threads** that execute tasks in parallel and a **manager thread that handles buffering process**.  
 It also includes **pause/resume cycles** and a **immediate or graceful shutdown process**.
 
 By default:
