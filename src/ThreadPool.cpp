@@ -28,22 +28,23 @@ void ThreadPool::submit(const std::function<void()>& task) {
 
 void ThreadPool::pause() {
     _pauseFlag = true;
-    _cv.notify_all();
     std::cout << "Thread pool paused." << std::endl;
+    _cv.notify_all();
+
 
 }
 
 
 void ThreadPool::resume() {
     _pauseFlag = false;
-    _cv.notify_all();
     std::cout << "Thread pool resumed." << std::endl;
+    _cv.notify_all();
 }
 
 
 void ThreadPool::stopNow() {
-    std::cout << "Stopping abruptly!" << std::endl;
     _immediateStopFlag = true;
+    std::cout << "Stopping abruptly!" << std::endl;
     _cv.notify_all();
 
     for (std::thread& worker : _workers) {
@@ -62,8 +63,8 @@ void ThreadPool::stopNow() {
 
 
 void ThreadPool::shutdown() {
-    std::cout << "Completing current tasks if there are any...!" << std::endl;
     _stopFlag = true;
+    std::cout << "Completing current tasks if there are any...!" << std::endl;
     _cv.notify_all();
 
     for (std::thread& worker : _workers) {
@@ -98,7 +99,7 @@ void ThreadPool::executionCycle() {
         std::unique_lock lock(_mutex);
         auto waitStart = std::chrono::high_resolution_clock::now();
         ++waitEventCount;
-        _cv.wait(lock, [this] {  return (_executionPhaseFlag || _immediateStopFlag || _stopFlag) && !_pauseFlag; });
+        _cv.wait(lock, [this] {  return (_executionPhaseFlag || _immediateStopFlag) && !_pauseFlag; });
         auto waitEnd = std::chrono::high_resolution_clock::now();
         totalWaitingTime += std::chrono::duration_cast<std::chrono::milliseconds>(waitEnd - waitStart).count();
 
@@ -133,12 +134,12 @@ void ThreadPool::bufferingCycle() {
         if (!_executionPhaseFlag && !_pauseFlag) {
             std::cout << "Buffering tasks for 45 seconds..." << std::endl;
             _cv.wait_for(lock, std::chrono::seconds(45), [this] {return _stopFlag || _immediateStopFlag || _pauseFlag; });
+            std::cout << "Buffering completed. Queue size after buffering: " << _taskQueue.size() << std::endl;
 
             if (_immediateStopFlag) {
                 return;
             }
 
-            std::cout << "Buffering completed. Queue size after buffering: " << _taskQueue.size() << std::endl;
             _executionPhaseFlag = true;
             totalQueueLength += _taskQueue.size();
             ++queueCheckCount;
