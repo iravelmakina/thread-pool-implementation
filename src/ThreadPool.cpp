@@ -13,7 +13,7 @@ ThreadPool::ThreadPool(const size_t numThreads) {
 
 
 void ThreadPool::submit(const std::function<void()>& task) {
-    std::lock_guard lock(_mutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     if (_stopFlag || _immediateStopFlag || _pauseFlag) {
         std::cout << "Task discarded (thread pool is shutting down or paused)." << std::endl;
         return;
@@ -96,7 +96,7 @@ void ThreadPool::executionCycle() {
             break;
         }
 
-        std::unique_lock lock(_mutex);
+        std::unique_lock<std::mutex> lock(_mutex);
         auto waitStart = std::chrono::high_resolution_clock::now();
         ++waitEventCount;
         _cv.wait(lock, [this] {  return (_executionPhaseFlag || _immediateStopFlag) && !_pauseFlag; });
@@ -130,7 +130,7 @@ void ThreadPool::executionCycle() {
 
 void ThreadPool::bufferingCycle() {
     while (!_stopFlag && !_immediateStopFlag) {
-        std::unique_lock lock(_mutex);
+        std::unique_lock<std::mutex> lock(_mutex);
         if (!_executionPhaseFlag && !_pauseFlag) {
             std::cout << "Buffering tasks for 45 seconds..." << std::endl;
             _cv.wait_for(lock, std::chrono::seconds(45), [this] {return _stopFlag || _immediateStopFlag || _pauseFlag; });

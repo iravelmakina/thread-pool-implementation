@@ -30,7 +30,7 @@ int main() {
     std::uniform_int_distribution<> dis(6, 12);
 
     ThreadPool pool(4);
-    std::atomic running(true);
+    std::atomic<bool> running(true);
 
     std::thread generator(taskGenerator, std::ref(pool), std::ref(running), std::ref(gen), std::ref(dis));
 
