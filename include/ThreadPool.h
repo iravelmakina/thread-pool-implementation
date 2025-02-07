@@ -18,11 +18,10 @@ public:
 private:
     std::queue<std::function<void()>> _taskQueue;
     std::vector<std::thread> _workers;
-    std::thread _executor;
+    std::thread _manager;
 
-    void worker();
-    void startExecutionCycle();
-    bool runAllowed() const;
+    void executionCycle();
+    void bufferingCycle();
 
     std::condition_variable _cv;
     std::mutex _mutex;
@@ -32,11 +31,12 @@ private:
     std::atomic<bool> _pauseFlag{false};
     std::atomic<bool> _executionPhaseFlag{false};
 
-    // testing
+    // stats
     std::atomic<size_t> totalThreadsCreated{0};
     std::atomic<size_t> totalTasksExecuted{0};
-    std::atomic<size_t> totalWaitingTime{0};
     std::atomic<size_t> totalExecutionTime{0};
+    std::atomic<size_t> totalWaitingTime{0};
+    std::atomic<int> waitEventCount{0};
     std::atomic<size_t> totalQueueLength{0};
     std::atomic<size_t> queueCheckCount{0};
     void printStats() const;
