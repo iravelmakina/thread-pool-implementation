@@ -1,10 +1,10 @@
-# Thread Pool Implementation
+![threadPool-ezgif com-optimize](https://github.com/user-attachments/assets/87686393-b3f6-4282-863c-92710d101d74)# Thread Pool Implementation
 
 ## Overview
 This project implements a **Thread Pool** in C++ using `std::thread`, `std::mutex`, and `std::condition_variable`.  
 It supports **task execution, pausing, resuming, buffering tasks, and immeadiate/graceful shutdown**.
 
-![threadPoolStart](https://github.com/user-attachments/assets/f7235188-f122-4e21-a3e9-137fd1678fc8)
+![threadPoolStart](https://github.com/user-attachments/assets/a906b41f-0875-4ed9-b3ca-8aa09412df7f)
 
 ## Features
 - Efficient **Thread Pool** that manages a queue of tasks.
