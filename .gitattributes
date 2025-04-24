@@ -1,0 +1,34 @@
+# Normalize line endings for text files
+* text=auto
+
+# Treat C++ source and header files as text
+*.cpp text
+*.h text
+*.hpp text
+*.c text
+
+# Exclude binary files from diff
+*.png binary
+*.jpg binary
+*.gif binary
+*.exe binary
+*.dll binary
+*.so binary
+*.a binary
+*.o binary
+
+# CMake files
+CMakeLists.txt text
+*.cmake text
+
+# Ignore generated build files
+*.obj binary
+*.log text
+*.pch binary
+*.pdb binary
+*.ilk binary
+*.lib binary
+
+# UTF-8 encoding for specific files
+*.md text eol=lf
+*.txt text eol=lf

@@ -30,8 +30,6 @@ void ThreadPool::pause() {
     _pauseFlag = true;
     std::cout << "Thread pool paused." << std::endl;
     _cv.notify_all();
-
-
 }
 
 
